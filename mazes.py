@@ -1,7 +1,6 @@
 import requests
 
 class mazeClass:
-
 	# Initialize a grid to fit the maze
 	def __init__(self, size):
 		self.width = size[0]
@@ -35,7 +34,6 @@ def move(token, direction):
 	moveUrl = "http://ec2-34-216-8-43.us-west-2.compute.amazonaws.com/game?token=" + token
 	moveRequest = requests.post(moveUrl, data={"action":direction})
 	data = moveRequest.json()
-	print data["result"]
 	return data["result"]
 
 # Solves the current maze we're on
@@ -48,6 +46,7 @@ def solveMaze(token, maze):
 	# Try to move up
 	code = move(token, "UP")
 	status = getStatus(token)
+	print status
 	newLoc = status["current_location"]
 	if code == "SUCCESS" and maze.isSpaceVisited(newLoc):
 		move(token, "DOWN") # move back if we've already visited
@@ -59,6 +58,7 @@ def solveMaze(token, maze):
 	# Try to move right
 	code = move(token, "RIGHT")
 	status = getStatus(token)
+	print status
 	newLoc = status["current_location"]
 	if code == "SUCCESS" and maze.isSpaceVisited(newLoc):
 		print "returned true"
@@ -72,6 +72,7 @@ def solveMaze(token, maze):
 	# Try to move left
 	code = move(token, "LEFT")
 	status = getStatus(token)
+	print status
 	newLoc = status["current_location"]
 	if code == "SUCCESS" and maze.isSpaceVisited(newLoc):
 		move(token, "RIGHT")
@@ -83,6 +84,7 @@ def solveMaze(token, maze):
 	# Try to move down
 	code = move(token, "DOWN")
 	status = getStatus(token)
+	print status
 	newLoc = status["current_location"]
 	if code == "SUCCESS" and maze.isSpaceVisited(newLoc):
 		move(token, "UP")
