@@ -1,111 +1,113 @@
 import requests
+from typing import List
 
-class mazeClass:
-	# Initialize a grid to fit the maze
-	def __init__(self, size):
-		self.width = size[0]
-		self.height = size[1]
-		self.matrix = []
-		for x in range(self.width):
-			matrixRow = []
-			self.matrix.append(matrixRow)
-			for y in range(self.height):
-				self.matrix[x].append(0)
-
-	# Mark a space as visited in the maze
-	def visit(self, location):
-		self.matrix[location[0]][location[1]] = 1
-
-	# Check if we've already visited a space in the maze
-	def isSpaceVisited(self, location):
-		if self.matrix[location[0]][location[1]] == 1:
-			return True
-		return False
 
 # Get information about the maze
-def getStatus(token):
-	getUrl = "http://ec2-34-216-8-43.us-west-2.compute.amazonaws.com/game?token=" + token
-	getRequest = requests.get(getUrl)
-	data = getRequest.json()
-	return data
+def get_game_state(token: str) -> List[str]:
+    url = "http://ec2-34-216-8-43.us-west-2.compute.amazonaws.com/game?token=" + token
+    ret = requests.get(url)
+    data = ret.json()
+    return data
+
 
 # Moves in a specific direction
-def move(token, direction):
-	moveUrl = "http://ec2-34-216-8-43.us-west-2.compute.amazonaws.com/game?token=" + token
-	moveRequest = requests.post(moveUrl, data={"action":direction})
-	data = moveRequest.json()
-	return data["result"]
+def move(token: str, direction: str) -> str:
+    url = "http://ec2-34-216-8-43.us-west-2.compute.amazonaws.com/game?token=" + token
+    ret = requests.post(url, data={"action": direction})
+    data = ret.json()
+    return data["result"]
+
 
 # Solves the current maze we're on
-def solveMaze(token, maze):
-	status = getStatus(token)
-	print status
-	currLoc = status["current_location"]
-	maze.visit(currLoc)
+def solve_maze(token: str) -> List[str]:
+    game = get_game_state(token)
+    start = game["current_location"]
 
-	# Try to move up
-	code = move(token, "UP")
-	status = getStatus(token)
-	print status
-	newLoc = status["current_location"]
-	if code == "SUCCESS" and maze.isSpaceVisited(newLoc):
-		move(token, "DOWN") # move back if we've already visited
-	elif code == "SUCCESS":
-		solveMaze(token, maze)
-	elif code == "END":
-		print "SOLVED MAZE++++++"
+    stack = [start]
+    visited_locs = [start]
 
-	# Try to move right
-	code = move(token, "RIGHT")
-	status = getStatus(token)
-	print status
-	newLoc = status["current_location"]
-	if code == "SUCCESS" and maze.isSpaceVisited(newLoc):
-		print "returned true"
-		print currLoc
-		move(token, "LEFT")
-	elif code == "SUCCESS":
-		solveMaze(token, maze)
-	elif code == "END":
-		print "SOLVED MAZE++++++"
+    width = game["maze_size"][0]
+    height = game["maze_size"][1]
 
-	# Try to move left
-	code = move(token, "LEFT")
-	status = getStatus(token)
-	print status
-	newLoc = status["current_location"]
-	if code == "SUCCESS" and maze.isSpaceVisited(newLoc):
-		move(token, "RIGHT")
-	elif code == "SUCCESS":
-		solveMaze(token, maze)
-	elif code == "END":
-		print "SOLVED MAZE++++++"
+    while True:
+        loc = stack.pop()
+        x_loc = loc[0]
+        y_loc = loc[1]
 
-	# Try to move down
-	code = move(token, "DOWN")
-	status = getStatus(token)
-	print status
-	newLoc = status["current_location"]
-	if code == "SUCCESS" and maze.isSpaceVisited(newLoc):
-		move(token, "UP")
-	elif code == "SUCCESS":
-		solveMaze(token, maze)
-	elif code == "OUT_OF_BOUNDS":
-		return
-	elif code == "END":
-		print "SOLVED MAZE++++++"
+        # Try moving right
+        # Check that we'd be in bounds
+        if x_loc + 1 < width and [x_loc + 1, y_loc] not in visited_locs:
+            code = move(token, "RIGHT")
+            print(code)
+            if code == "SUCCESS":
+                visited_locs.append([x_loc + 1, y_loc])
+                stack.append([x_loc + 1, y_loc])
+                game = get_game_state(token)
+                print("Moved right!")
+                print(game)
+            elif code == "END":
+                return
+            elif code == "WALL":
+                visited_locs.append([x_loc + 1, y_loc])
+
+        # Try moving up
+        # Check that we'd be in bounds
+        if y_loc - 1 >= 0 and [x_loc, y_loc - 1] not in visited_locs:
+            code = move(token, "UP")
+            if code == "SUCCESS":
+                visited_locs.append([x_loc, y_loc - 1])
+                stack.append([x_loc, y_loc - 1])
+                game = get_game_state(token)
+                print("Moved up!")
+                print(game)
+            elif code == "END":
+                return
+            elif code == "WALL":
+                visited_locs.append([x_loc, y_loc - 1])
+
+        # Try moving left
+        # Check that we'd be in bounds
+        if x_loc - 1 >= 0 and [x_loc - 1, y_loc] not in visited_locs:
+            code = move(token, "LEFT")
+            if code == "SUCCESS":
+                visited_locs.append([x_loc - 1, y_loc])
+                stack.append([x_loc - 1, y_loc])
+                game = get_game_state(token)
+                print("Moved left!")
+                print(game)
+            elif code == "END":
+                return
+            elif code == "WALL":
+                visited_locs.append([x_loc - 1, y_loc])
+
+        # Try moving down
+        # Check that we'd be in bounds
+        if y_loc + 1 < height and [x_loc, y_loc + 1] not in visited_locs:
+            code = move(token, "DOWN")
+            if code == "SUCCESS":
+                visited_locs.append([x_loc, y_loc + 1])
+                stack.append([x_loc, y_loc + 1])
+                game = get_game_state(token)
+                print("Moved down!")
+                print(game)
+            elif code == "END":
+                return
+            elif code == "WALL":
+                visited_locs.append([x_loc, y_loc + 1])
+
 
 # Main method
 def main():
-	tokenUrl = "http://ec2-34-216-8-43.us-west-2.compute.amazonaws.com/session"
+    url = "http://ec2-34-216-8-43.us-west-2.compute.amazonaws.com/session"
 
-	tokenRequest = requests.post(tokenUrl, data={"uid":"204915219"})
-	data = tokenRequest.json()
-	token = data["token"]
+    ret = requests.post(url, data={"uid": "204915219"})
+    data = ret.json()
+    token = data["token"]
 
-	status = getStatus(token)
-	maze = mazeClass(status["maze_size"])
-	solveMaze(token, maze)
+    solve_maze(token)
+    game = get_game_state(token)
+    print(game)
+
 
 if __name__ == "__main__":
-	main()
+    main()
