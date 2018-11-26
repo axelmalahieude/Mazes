@@ -37,10 +37,12 @@ class Maze:
         else:  # down
             new_y += 1
 
+				# Tests that we are in bounds and the space hasn't yet been visited
         if 0 <= new_x < self.width and 0 <= new_y < self.height\
                 and self.grid[new_y][new_x] == 0:
             ret = requests.post(self.move_url, data={"action": direction})
             result_code = ret.json()["result"]
+						# Mark the path and space if we successfully moved
             if result_code == "SUCCESS":
                 self.grid[new_y][new_x] = 1
                 self.path.append([new_x, new_y])
@@ -67,6 +69,7 @@ class Maze:
         else:
             direction = "DOWN"
 
+				# We know the move will be valid since we were already there
         requests.post(self.move_url, data={"action": direction})
         self.current_location = previous_location
 
@@ -86,6 +89,8 @@ class Maze:
                 return
             if self.move("DOWN") == "END":
                 return
+						# If we haven't moved in any of the 4 directions, we need to
+						# retrace our steps until we are able to move
             if start == self.current_location:
                 self.retrace_step()
 
@@ -110,8 +115,9 @@ def main():
 
     game = get_game_state(token)
     print(game)
-
     status = ""
+
+		# Loop until we've finished solving all 12 mazes
     while status != "FINISHED":
         maze = Maze(token, get_game_state(token))
         maze.solve()
